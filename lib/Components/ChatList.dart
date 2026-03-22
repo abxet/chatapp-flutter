@@ -1,16 +1,15 @@
+import 'dart:math';
+
 import 'package:app/Components/chat_user_card.dart';
+import 'package:app/api/apis.dart';
+import 'package:app/models/Chat_user.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:app/Components/LoginWithEmail.dart';
 
 class ChatScreen extends StatelessWidget {
-  final List<Map<String, dynamic>> messages = [
-    {"text": "Hey, how are you?", "isMe": false},
-    {"text": "I’m good! Working on Flutter.", "isMe": true},
-    {"text": "Nice! Show me your progress.", "isMe": false},
-    {"text": "Sure, I’ll send screenshots.", "isMe": true},
-  ];
+  // final List<ChatUser> list = [];
   // final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   ChatScreen({super.key});
@@ -36,7 +35,42 @@ class ChatScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: ListView.builder(
+      body: StreamBuilder(
+        stream: APIs.firestore.collection("users").snapshots(),
+
+        builder: (context, snapshot) {
+          switch (snapshot.connectionState) {
+            // loading
+            case ConnectionState.waiting:
+            case ConnectionState.none:
+              return const Center(child: CircularProgressIndicator());
+            // data loaded
+            case ConnectionState.active:
+            case ConnectionState.done:
+              final data = snapshot.data?.docs;
+              final list =
+                  data?.map((e) => ChatUser.fromJson(e.data())).toList() ?? [];
+              if (list.isNotEmpty) {
+                return ListView.builder(
+                itemCount: list.length,
+                padding: EdgeInsets.only(top: 10),
+                physics: ScrollPhysics(),
+                itemBuilder: (context, index) {
+                  return ChatUserCard(user: list[index]);
+                },
+              );
+              } else {
+                return Text("User not found");
+              }
+          }
+        },
+      ),
+    );
+  }
+}
+
+/*
+ListView.builder(
         itemCount: 16,
         padding: EdgeInsets.only(top: 10),
         physics: ScrollPhysics(),
@@ -45,6 +79,4 @@ class ChatScreen extends StatelessWidget {
           return const ChatUserCard();
         },
       ),
-    );
-  }
-}
+*/
