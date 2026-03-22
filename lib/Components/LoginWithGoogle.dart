@@ -1,10 +1,11 @@
 // ignore_for_file: file_names
 
-import 'package:app/Components/UiHelper.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:app/Components/ChatList.dart';
+// import 'package:firebase_core/firebase_core.dart'; // Ensure this is initialized in main.dart
+import 'package:app/Components/ChatList.dart'; // Ensure ChatScreen is defined here
+import 'package:app/Components/UiHelper.dart';
 
 class LoginWithGoogle extends StatefulWidget {
   const LoginWithGoogle({super.key});
@@ -14,46 +15,75 @@ class LoginWithGoogle extends StatefulWidget {
 }
 
 class _LoginWithGoogleState extends State<LoginWithGoogle> {
-//    GoogleSignIn _googleSignIn = GoogleSignIn('email');
 
-  Future<void> login() async {
-//     try {
-//       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
+  bool _isInitialized = false;
 
-//       if (googleUser == null) return;
+  @override
+  void initState() {
+    super.initState();
+    _initializeGoogleSignIn();
+  }
 
-//       final GoogleSignInAuthentication googleAuth =
-//           await googleUser.authentication;
+  Future<void> _initializeGoogleSignIn() async {
+    try {
+      await _googleSignIn.initialize();
+      setState(() {
+        _isInitialized = true;
+      });
+    } catch (e) {
+      debugPrint("Initialization error: $e");
+    }
+  }
 
-//       final OAuthCredential credential = GoogleAuthProvider.credential(
-//         accessToken: googleAuth.accessToken,
-//         idToken: googleAuth.idToken,
-//       );
+  void login() async {
+    if (!_isInitialized) {
+      await _initializeGoogleSignIn();
+    }
 
-//       await FirebaseAuth.instance.signInWithCredential(credential);
+    try {
+      final GoogleSignInAccount googleUser = await _googleSignIn.authenticate(
+        scopeHint: ['email'],
+      );
 
-//       if (!mounted) return;
+      final authClient = _googleSignIn.authorizationClient;
+      final authorization = await authClient.authorizationForScopes(['email']);
 
-//       Navigator.pushReplacement(
-//         context,
-//         MaterialPageRoute(
-//           builder: (context) => ChatScreen(),
-//         ), 
-//       );
-//     } catch (e) {
-//       debugPrint("Login error: $e");
+      if (authorization == null) {
+        throw Exception("Failed to get authorization tokens");
+      }
 
-//       if (!mounted) return;
-//       ScaffoldMessenger.of(
-//         context,
-//       ).showSnackBar(SnackBar(content: Text("Error signing in: $e")));
-//     }
+      final credential = GoogleAuthProvider.credential(
+        accessToken: authorization.accessToken,
+        idToken: googleUser
+            .authentication
+            .idToken, 
+      );
+
+      await FirebaseAuth.instance.signInWithCredential(credential);
+
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) =>
+              ChatScreen(), 
+        ),
+      );
+    } catch (e) {
+      debugPrint("Login error: $e");
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error signing in: $e")));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Uihelper.CustomIconbutton(
-      login, 
+      login,
       "Sign In with Google",
       Icons.login,
       Colors.blue,
@@ -61,8 +91,6 @@ class _LoginWithGoogleState extends State<LoginWithGoogle> {
   }
 }
 
-extension on GoogleSignInAuthentication {
-  String? get accessToken => null;
-}
+
 
 

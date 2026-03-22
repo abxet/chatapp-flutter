@@ -1,10 +1,6 @@
-import 'package:app/Components/HomePage.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:app/Components/SplashScreen.dart';
-import 'package:app/Components/LoginWithEmail.dart';
-import 'package:app/Components/Signup.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
