@@ -1,21 +1,15 @@
-import 'dart:math';
-
 import 'package:app/Components/chat_user_card.dart';
 import 'package:app/api/apis.dart';
 import 'package:app/models/Chat_user.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/services.dart';
 import 'package:app/Components/LoginWithEmail.dart';
 
 class ChatScreen extends StatelessWidget {
-  // final List<ChatUser> list = [];
-  // final GoogleSignIn _googleSignIn = GoogleSignIn();
-
   ChatScreen({super.key});
 
   Future<void> logout(BuildContext context) async {
-    // await _googleSignIn.signOut();
     await FirebaseAuth.instance.signOut();
     Navigator.pushReplacement(
       context,
@@ -25,58 +19,104 @@ class ChatScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+    
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.white,
+        statusBarIconBrightness: Brightness.dark,
+      ),
+    );
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
+
+      // ✅ Modern AppBar
       appBar: AppBar(
-        title: Text("Chat List"),
+        elevation: 1,
+        backgroundColor: Colors.white,
+        title: const Text(
+          "Chats",
+          style: TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         actions: [
+
+          // Search button (future use)
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Icons.search, color: Colors.black87),
+            onPressed: () {},
+          ),
+
+          // Logout
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.black87),
             onPressed: () => logout(context),
           ),
         ],
       ),
+
       body: StreamBuilder(
         stream: APIs.firestore.collection("users").snapshots(),
 
         builder: (context, snapshot) {
           switch (snapshot.connectionState) {
-            // loading
+
             case ConnectionState.waiting:
             case ConnectionState.none:
               return const Center(child: CircularProgressIndicator());
-            // data loaded
+
             case ConnectionState.active:
             case ConnectionState.done:
               final data = snapshot.data?.docs;
               final list =
                   data?.map((e) => ChatUser.fromJson(e.data())).toList() ?? [];
+
+              // If users exist
               if (list.isNotEmpty) {
-                return ListView.builder(
-                itemCount: list.length,
-                padding: EdgeInsets.only(top: 10),
-                physics: ScrollPhysics(),
-                itemBuilder: (context, index) {
-                  return ChatUserCard(user: list[index]);
-                },
-              );
-              } else {
-                return Text("User not found");
+                return ListView.separated(
+                  itemCount: list.length,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  physics: const BouncingScrollPhysics(),
+
+                  separatorBuilder: (_, __) => const SizedBox(height: 4),
+
+                  itemBuilder: (context, index) {
+                    return ChatUserCard(user: list[index]);
+                  },
+                );
               }
+
+              
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.chat_bubble_outline,
+                        size: 80, color: Colors.grey.shade400),
+                    const SizedBox(height: 10),
+                    Text(
+                      "No users found",
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              );
           }
         },
+      ),
+
+      // Floating button
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.blue,
+        onPressed: () {},
+        child: const Icon(Icons.chat, color: Colors.white),
       ),
     );
   }
 }
-
-/*
-ListView.builder(
-        itemCount: 16,
-        padding: EdgeInsets.only(top: 10),
-        physics: ScrollPhysics(),
-        itemBuilder: (context, index) {
-          
-          return const ChatUserCard();
-        },
-      ),
-*/
